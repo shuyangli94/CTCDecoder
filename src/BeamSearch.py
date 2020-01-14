@@ -1,6 +1,8 @@
-from __future__ import division
-from __future__ import print_function
 import numpy as np
+
+from typing import Sequence
+
+from LanguageModel import LanguageModel
 
 
 class BeamEntry:
@@ -32,7 +34,7 @@ class BeamState:
 		return [x.labeling for x in sortedBeams]
 
 
-def applyLM(parentBeam, childBeam, classes, lm):
+def applyLM(parentBeam: BeamEntry, childBeam: BeamEntry, classes: Sequence[str], lm: LanguageModel):
 	"calculate LM score of child beam by taking score from parent beam and bigram probability of last two chars"
 	if lm and not childBeam.lmApplied:
 		c1 = classes[parentBeam.labeling[-1] if parentBeam.labeling else classes.index(' ')] # first char
@@ -43,13 +45,13 @@ def applyLM(parentBeam, childBeam, classes, lm):
 		childBeam.lmApplied = True # only apply LM once per beam entry
 
 
-def addBeam(beamState, labeling):
+def addBeam(beamState: BeamState, labeling: str):
 	"add beam if it does not yet exist"
 	if labeling not in beamState.entries:
 		beamState.entries[labeling] = BeamEntry()
 
 
-def ctcBeamSearch(mat, classes, lm, beamWidth=25):
+def ctcBeamSearch(mat: np.array, classes: Sequence[str], lm: LanguageModel = None, beamWidth: int = 25):
 	"beam search as described by the paper of Hwang et al. and the paper of Graves et al."
 
 	blankIdx = len(classes)
@@ -113,7 +115,8 @@ def ctcBeamSearch(mat, classes, lm, beamWidth=25):
 				curr.entries[newLabeling].prTotal += prNonBlank
 				
 				# apply LM
-				applyLM(curr.entries[labeling], curr.entries[newLabeling], classes, lm)
+				if lm is not None:
+					applyLM(curr.entries[labeling], curr.entries[newLabeling], classes, lm)
 
 		# set new beam state
 		last = curr
